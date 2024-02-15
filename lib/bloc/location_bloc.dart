@@ -4,6 +4,7 @@ import 'package:location/location.dart';
 import 'package:yandex_mapkit/yandex_mapkit.dart';
 
 part 'location_event.dart';
+
 part 'location_state.dart';
 
 class LocationBloc extends Bloc<LocationEvent, LocationState> {
@@ -24,44 +25,47 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
             ),
           ),
         ) {
-    on<StartedLocationBloc>((event, emit) async {
-      var point = await Location().getLocation();
+    on<StartedLocationBloc>(
+      (event, emit) async {
+        var point = await Location().getLocation();
 
-      emit(state.copyWith(
-        myPoint: Point(latitude: point.latitude!, longitude: point.longitude!),
-        status: Status.success,
-      ));
-      final request = YandexDriving.requestRoutes(
-        points: [
-          RequestPoint(
-            point: state.myPoint,
-            requestPointType: RequestPointType.wayPoint,
+        emit(state.copyWith(
+          myPoint:
+              Point(latitude: point.latitude!, longitude: point.longitude!),
+          status: Status.success,
+        ));
+        final request = YandexDriving.requestRoutes(
+          points: [
+            RequestPoint(
+              point: state.myPoint,
+              requestPointType: RequestPointType.wayPoint,
+            ),
+            RequestPoint(
+              point: state.nextPoint,
+              requestPointType: RequestPointType.wayPoint,
+            ),
+          ],
+          drivingOptions: const DrivingOptions(
+            initialAzimuth: 0,
+            routesCount: 1,
+            avoidTolls: true,
           ),
-          RequestPoint(
-            point: state.nextPoint,
-            requestPointType: RequestPointType.wayPoint,
-          ),
-        ],
-        drivingOptions: const DrivingOptions(
-          initialAzimuth: 0,
-          routesCount: 1,
-          avoidTolls: true,
-        ),
-      );
-      final result = await request.result;
+        );
+        final result = await request.result;
 
-      emit(state.copyWith(
-        route: PolylineMapObject(
-          strokeColor: Colors.black,
-          strokeWidth: 3,
-          mapId: const MapObjectId("route"),
-          polyline: Polyline(
-            points: result.routes?.first.geometry ?? [],
+        emit(
+          state.copyWith(
+            route: PolylineMapObject(
+              strokeColor: Colors.black,
+              strokeWidth: 3,
+              mapId: const MapObjectId("route"),
+              polyline: Polyline(
+                points: result.routes?.first.geometry ?? [],
+              ),
+            ),
           ),
-        ),
-      ));
-      
-    
-    });
+        );
+      },
+    );
   }
 }
